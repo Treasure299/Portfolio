@@ -343,57 +343,31 @@ function initMotion() {
     scrollTrigger: {
       trigger: ".click-scroll",
       start: "top 72%",
-      toggleActions: "play none none reverse"
-    }
-  });
-
-  gsap.to(".click-scroll__text", {
-    yPercent: -12,
-    ease: "none",
-    scrollTrigger: {
-      trigger: ".click-scroll",
-      start: "top top",
-      end: "bottom top",
-      scrub: true
-    }
-  });
-
-  gsap.to(".click-scroll__line", {
-    yPercent: (index) => -8 - index * 6,
-    scale: (index) => 1 + index * 0.018,
-    opacity: (index) => 1 - index * 0.08,
-    ease: "none",
-    scrollTrigger: {
-      trigger: ".click-scroll",
-      start: "top top",
-      end: "bottom top",
-      scrub: true
+      toggleActions: "restart none restart none"
     }
   });
 
   gsap.from(".service-headline h2", {
     opacity: 0,
-    yPercent: 24,
-    scaleX: 0.94,
-    filter: "blur(16px)",
+    yPercent: 18,
+    filter: "blur(10px)",
     duration: 0.9,
     ease: "power4.out",
     scrollTrigger: {
       trigger: ".services",
       start: "top 74%",
-      toggleActions: "play none none reverse"
+      toggleActions: "play none none none",
+      once: true
     }
   });
 
   gsap.to(".service-headline h2", {
-    yPercent: -13,
-    scaleX: 1.045,
-    letterSpacing: "-0.52vw",
+    yPercent: -8,
     ease: "none",
     scrollTrigger: {
       trigger: ".services",
-      start: "top 42%",
-      end: "45% top",
+      start: "top 38%",
+      end: "38% top",
       scrub: true
     }
   });
