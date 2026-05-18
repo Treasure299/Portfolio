@@ -1,5 +1,8 @@
 const canAnimate = true;
 const contactEmail = "hellotreasure.work@gmail.com";
+const bookingEndpoint = "https://script.google.com/macros/s/AKfycbzBFIFXV3-yA7jKPOGQHW_OuEv64kLYW13QzxANBrA4akGmRXykpXeasp-qMThoXnpdjw/exec";
+const bookingFallbackUrl = "https://calendar.google.com/calendar/appointments/schedules/AcZssZ1w7-WcxhDZSGTvcITmT7kA0h-9uwS__CKVz3cBic-TYARubbvs0hlPUW1l-E9qedr8UpIsKwP5";
+const bookingTimeZone = "Europe/Warsaw";
 
 function prepareInlineLoop(video) {
   if (!video) return;
@@ -608,6 +611,143 @@ function initContactCopy() {
   });
 }
 
+function initBooking() {
+  const trigger = document.querySelector("[data-book-call]");
+  const booking = document.querySelector(".booking");
+  const form = booking?.querySelector(".booking__form");
+  const closeButton = booking?.querySelector(".booking__close");
+  const datesWrap = booking?.querySelector(".booking__dates");
+  const timesWrap = booking?.querySelector(".booking__times");
+  const message = booking?.querySelector(".booking__message");
+  if (!trigger || !booking || !form || !closeButton || !datesWrap || !timesWrap || !message) return;
+
+  let selectedDate = "";
+  let selectedTime = "";
+  const dateFormatter = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" });
+
+  function isoDate(date) {
+    return date.toISOString().slice(0, 10);
+  }
+
+  function buildDates() {
+    const dates = [];
+    const cursor = new Date();
+    cursor.setDate(cursor.getDate() + 1);
+
+    while (dates.length < 9) {
+      const day = cursor.getDay();
+      if (day !== 0 && day !== 6) {
+        dates.push(new Date(cursor));
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    datesWrap.innerHTML = dates.map((date, index) => {
+      const value = isoDate(date);
+      const [weekday, label] = dateFormatter.format(date).split(", ");
+      return `<button class="booking__date${index === 0 ? " is-selected" : ""}" type="button" data-date="${value}"><span>${weekday}</span><small>${label}</small></button>`;
+    }).join("");
+
+    selectedDate = isoDate(dates[0]);
+  }
+
+  function buildTimes() {
+    const times = [];
+    for (let hour = 10; hour <= 16; hour += 1) {
+      times.push(`${String(hour).padStart(2, "0")}:00`);
+      times.push(`${String(hour).padStart(2, "0")}:30`);
+    }
+
+    timesWrap.innerHTML = times.map((time, index) => {
+      const [hourText, minute] = time.split(":");
+      const hour = Number(hourText);
+      const label = `${hour > 12 ? hour - 12 : hour}:${minute}${hour >= 12 ? "pm" : "am"}`;
+      return `<button class="booking__time${index === 0 ? " is-selected" : ""}" type="button" data-time="${time}">${label}</button>`;
+    }).join("");
+
+    selectedTime = times[0];
+  }
+
+  function openBooking(event) {
+    event.preventDefault();
+    buildDates();
+    buildTimes();
+    message.textContent = "";
+    booking.classList.add("is-open");
+    booking.setAttribute("aria-hidden", "false");
+    document.body.classList.add("is-locked");
+  }
+
+  function closeBooking() {
+    booking.classList.remove("is-open");
+    booking.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("is-locked");
+  }
+
+  function setSelected(buttons, target, className) {
+    buttons.forEach((button) => button.classList.toggle(className, button === target));
+  }
+
+  function submitBooking(event) {
+    event.preventDefault();
+    const formData = new FormData(form);
+    if (formData.get("website")) return;
+    if (!selectedDate || !selectedTime) {
+      message.textContent = "Pick a day and time first.";
+      return;
+    }
+
+    const payload = new URLSearchParams();
+    payload.set("name", formData.get("name") || "");
+    payload.set("email", formData.get("email") || "");
+    payload.set("projectType", formData.get("projectType") || "");
+    payload.set("notes", formData.get("notes") || "");
+    payload.set("date", selectedDate);
+    payload.set("time", selectedTime);
+    payload.set("timeZone", bookingTimeZone);
+    payload.set("durationMinutes", "30");
+
+    if (!bookingEndpoint) {
+      message.textContent = "Preview mode: opening the live Google booking page to finish this call.";
+      window.open(bookingFallbackUrl, "_blank", "noopener");
+      return;
+    }
+
+    message.textContent = "Booking your call...";
+    fetch(bookingEndpoint, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: payload.toString()
+    });
+
+    message.textContent = "Call request sent. Check your email for the invite and Google Meet link.";
+    form.reset();
+  }
+
+  trigger.addEventListener("click", openBooking);
+  closeButton.addEventListener("click", closeBooking);
+  booking.addEventListener("click", (event) => {
+    if (event.target === booking) closeBooking();
+  });
+  datesWrap.addEventListener("click", (event) => {
+    const button = event.target.closest(".booking__date");
+    if (!button) return;
+    selectedDate = button.dataset.date || "";
+    setSelected([...datesWrap.querySelectorAll(".booking__date")], button, "is-selected");
+  });
+  timesWrap.addEventListener("click", (event) => {
+    const button = event.target.closest(".booking__time");
+    if (!button) return;
+    selectedTime = button.dataset.time || "";
+    setSelected([...timesWrap.querySelectorAll(".booking__time")], button, "is-selected");
+  });
+  form.addEventListener("submit", submitBooking);
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && booking.classList.contains("is-open")) closeBooking();
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initHeroTypography();
   initReferenceHeroText();
@@ -622,4 +762,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initModal();
   initProjectPreview();
   initContactCopy();
+  initBooking();
 });

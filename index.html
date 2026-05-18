@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Treasure is a video editor and motion designer creating sharp films, motion systems, podcast edits, and social-first stories.">
   <title>Treasure | Video Editor & Motion Designer</title>
-  <link rel="stylesheet" href="styles.css?v=click-button-fit-1">
+  <link rel="stylesheet" href="styles.css?v=booking-live-6">
 </head>
 <body>
   <div class="loader" aria-hidden="true">
@@ -41,7 +41,7 @@
       <a href="#work">Work</a>
     </nav>
     <ol class="nav__social" aria-label="Contact links">
-      <li><a class="social-link social-link--email" href="mailto:hellotreasure.work@gmail.com" aria-label="Email Treasure">
+      <li><a class="social-link social-link--email" href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=hellotreasure.work%40gmail.com&amp;su=Project%20enquiry%20for%20Treasure" target="_blank" rel="noopener" aria-label="Email Treasure">
         <img class="social-icon" src="Logos/gmail.png" alt="">
       </a></li>
       <li><a class="social-link social-link--linkedin" href="#" aria-label="LinkedIn">
@@ -228,7 +228,7 @@
           </div>
           <div>
             <p>Contact:</p>
-            <a href="mailto:hellotreasure.work@gmail.com">Email</a>
+            <a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=hellotreasure.work%40gmail.com&amp;su=Project%20enquiry%20for%20Treasure" target="_blank" rel="noopener">Email</a>
             <a href="#">LinkedIn</a>
             <a href="#">Instagram</a>
           </div>
@@ -253,10 +253,64 @@
     </div>
   </div>
 
+  <section class="booking" aria-hidden="true" role="dialog" aria-label="Book a call with Treasure">
+    <button class="booking__close" type="button" aria-label="Close booking">Close</button>
+    <div class="booking__shell" data-lenis-prevent>
+      <div class="booking__intro">
+        <h2>Let's create your next standout video.</h2>
+        <p>Tell me what you are building, and we will shape the video that helps it stand out.</p>
+        <div class="booking__meta">
+          <span>30 minutes</span>
+          <span>Google Meet</span>
+          <span>Mon-Fri</span>
+        </div>
+      </div>
+      <form class="booking__form" data-lenis-prevent>
+        <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <div class="booking__step">
+          <p>Pick a day</p>
+          <div class="booking__dates" aria-label="Available dates"></div>
+        </div>
+        <div class="booking__step">
+          <p>Pick a time</p>
+          <div class="booking__times" aria-label="Available times"></div>
+        </div>
+        <div class="booking__fields">
+          <label>
+            <span>Name</span>
+            <input name="name" type="text" autocomplete="name" required>
+          </label>
+          <label>
+            <span>Email</span>
+            <input name="email" type="email" autocomplete="email" required>
+          </label>
+          <label>
+            <span>Project type</span>
+            <select name="projectType">
+              <option>Video edit</option>
+              <option>Motion design</option>
+              <option>Podcast or social edit</option>
+              <option>Not sure yet</option>
+            </select>
+          </label>
+          <label class="booking__notes">
+            <span>What are we making?</span>
+            <textarea name="notes" rows="4" placeholder="A sentence or two is enough."></textarea>
+          </label>
+        </div>
+        <p class="booking__message" aria-live="polite"></p>
+        <button class="booking__submit" type="submit">
+          <span>Schedule call</span>
+          <span>↗</span>
+        </button>
+      </form>
+    </div>
+  </section>
+
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/CustomEase.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.17/dist/lenis.min.js"></script>
-  <script src="script.js?v=ipad-autoplay-1"></script>
+  <script src="script.js?v=booking-live-6"></script>
 </body>
 </html>
