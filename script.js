@@ -1,27 +1,48 @@
 const canAnimate = true;
 const contactEmail = "hellotreasure.work@gmail.com";
 
+function prepareInlineLoop(video) {
+  if (!video) return;
+  video.muted = true;
+  video.defaultMuted = true;
+  video.loop = true;
+  video.playsInline = true;
+  video.setAttribute("muted", "");
+  video.setAttribute("loop", "");
+  video.setAttribute("playsinline", "");
+  video.setAttribute("webkit-playsinline", "");
+}
+
 function initBannerVideo() {
   const video = document.querySelector(".click-scroll__video");
   if (!video) return;
+
+  prepareInlineLoop(video);
 
   const specialSrc = video.dataset.specialSrc;
   const fallbackSrc = video.dataset.fallbackSrc;
   if (!specialSrc || !fallbackSrc) return;
 
-  video.src = fallbackSrc;
-  video.dataset.activeSrc = fallbackSrc;
+  const preferredSrc = video.getAttribute("src") || fallbackSrc;
+  video.src = preferredSrc;
+  video.dataset.activeSrc = preferredSrc;
   video.load();
 
   fetch(specialSrc, { method: "HEAD", cache: "no-store" })
     .then((response) => {
       if (!response.ok) return;
+      prepareInlineLoop(video);
       video.src = specialSrc;
       video.dataset.activeSrc = specialSrc;
       video.load();
       video.play().catch(() => {});
     })
     .catch(() => {});
+
+  video.addEventListener("ended", () => {
+    video.currentTime = 0;
+    video.play().catch(() => {});
+  });
 }
 
 function initLoader() {
@@ -425,6 +446,7 @@ function initVideoPlayback() {
     entries.forEach((entry) => {
       const video = entry.target;
       if (entry.isIntersecting) {
+        prepareInlineLoop(video);
         video.play().catch(() => {});
       } else if (!video.classList.contains("modal__video")) {
         video.pause();
@@ -433,7 +455,13 @@ function initVideoPlayback() {
   }, { threshold: 0.16 });
 
   videos.forEach((video) => {
-    if (!video.classList.contains("modal__video")) observer.observe(video);
+    if (video.classList.contains("modal__video")) return;
+    prepareInlineLoop(video);
+    video.addEventListener("ended", () => {
+      video.currentTime = 0;
+      video.play().catch(() => {});
+    });
+    observer.observe(video);
   });
 }
 
