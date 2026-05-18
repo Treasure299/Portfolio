@@ -1259,7 +1259,8 @@ video {
   transition: opacity 0.28s ease, visibility 0.28s ease;
 }
 
-.booking.is-open {
+.booking.is-open,
+.booking:target {
   opacity: 1;
   visibility: visible;
 }

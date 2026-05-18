@@ -620,6 +620,8 @@ function initBooking() {
   const timesWrap = booking?.querySelector(".booking__times");
   const message = booking?.querySelector(".booking__message");
   if (!trigger || !booking || !form || !closeButton || !datesWrap || !timesWrap || !message) return;
+  if (booking.dataset.ready === "true") return;
+  booking.dataset.ready = "true";
 
   let selectedDate = "";
   let selectedTime = "";
@@ -669,19 +671,28 @@ function initBooking() {
   }
 
   function openBooking(event) {
-    event.preventDefault();
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     buildDates();
     buildTimes();
     message.textContent = "";
     booking.classList.add("is-open");
     booking.setAttribute("aria-hidden", "false");
     document.body.classList.add("is-locked");
+    if (window.location.hash !== "#booking") {
+      history.pushState(null, "", "#booking");
+    }
   }
 
   function closeBooking() {
     booking.classList.remove("is-open");
     booking.setAttribute("aria-hidden", "true");
     document.body.classList.remove("is-locked");
+    if (window.location.hash === "#booking") {
+      history.pushState(null, "", `${window.location.pathname}${window.location.search}#contact`);
+    }
   }
 
   function setSelected(buttons, target, className) {
@@ -725,7 +736,11 @@ function initBooking() {
     form.reset();
   }
 
-  trigger.addEventListener("click", openBooking);
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-book-call]");
+    if (!button) return;
+    openBooking(event);
+  }, true);
   closeButton.addEventListener("click", closeBooking);
   booking.addEventListener("click", (event) => {
     if (event.target === booking) closeBooking();
@@ -746,21 +761,31 @@ function initBooking() {
   window.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && booking.classList.contains("is-open")) closeBooking();
   });
+  window.addEventListener("hashchange", () => {
+    if (window.location.hash === "#booking") openBooking();
+  });
+  if (window.location.hash === "#booking") openBooking();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+function initApp() {
+  initBooking();
+  initContactCopy();
+  initVideoPlayback();
+  initBannerVideo();
   initHeroTypography();
   initReferenceHeroText();
   initLoader();
   initSmoothScroll();
   initNavTheme();
   initCursor();
-  initBannerVideo();
   initInteractiveDepth();
   initMotion();
-  initVideoPlayback();
   initModal();
   initProjectPreview();
-  initContactCopy();
-  initBooking();
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp, { once: true });
+} else {
+  initApp();
+}
