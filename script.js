@@ -13,6 +13,31 @@ function prepareInlineLoop(video) {
   video.setAttribute("webkit-playsinline", "");
 }
 
+function isVideoNearViewport(video) {
+  const rect = video.getBoundingClientRect();
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+  const margin = viewportHeight * 0.45;
+  return rect.bottom >= -margin && rect.top <= viewportHeight + margin && rect.right >= 0 && rect.left <= viewportWidth;
+}
+
+function playInlineVideo(video) {
+  if (!video || video.classList.contains("modal__video")) return;
+  prepareInlineLoop(video);
+  if (video.readyState < 2) video.load();
+  video.play().catch(() => {});
+}
+
+function isPersistentBackgroundVideo(video) {
+  return video.matches(".hero__video, .click-scroll__video, .footer > video");
+}
+
+function playVisibleInlineVideos() {
+  document.querySelectorAll("video:not(.modal__video)").forEach((video) => {
+    if (isPersistentBackgroundVideo(video) || isVideoNearViewport(video)) playInlineVideo(video);
+  });
+}
+
 function initBannerVideo() {
   const video = document.querySelector(".click-scroll__video");
   if (!video) return;
@@ -35,13 +60,13 @@ function initBannerVideo() {
       video.src = specialSrc;
       video.dataset.activeSrc = specialSrc;
       video.load();
-      video.play().catch(() => {});
+      playInlineVideo(video);
     })
     .catch(() => {});
 
   video.addEventListener("ended", () => {
     video.currentTime = 0;
-    video.play().catch(() => {});
+    playInlineVideo(video);
   });
 }
 
@@ -446,23 +471,33 @@ function initVideoPlayback() {
     entries.forEach((entry) => {
       const video = entry.target;
       if (entry.isIntersecting) {
-        prepareInlineLoop(video);
-        video.play().catch(() => {});
-      } else if (!video.classList.contains("modal__video")) {
+        playInlineVideo(video);
+      } else if (!isPersistentBackgroundVideo(video)) {
         video.pause();
       }
     });
-  }, { threshold: 0.16 });
+  }, { rootMargin: "45% 0px", threshold: 0.01 });
 
   videos.forEach((video) => {
     if (video.classList.contains("modal__video")) return;
     prepareInlineLoop(video);
     video.addEventListener("ended", () => {
       video.currentTime = 0;
-      video.play().catch(() => {});
+      playInlineVideo(video);
     });
+    if (isPersistentBackgroundVideo(video)) playInlineVideo(video);
     observer.observe(video);
   });
+
+  playVisibleInlineVideos();
+  window.addEventListener("load", playVisibleInlineVideos, { once: true });
+  window.addEventListener("pageshow", playVisibleInlineVideos);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) playVisibleInlineVideos();
+  });
+  window.addEventListener("scroll", playVisibleInlineVideos, { passive: true });
+  window.addEventListener("touchstart", playVisibleInlineVideos, { passive: true });
+  window.addEventListener("pointerdown", playVisibleInlineVideos, { passive: true });
 }
 
 function initModal() {
