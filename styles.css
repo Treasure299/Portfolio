@@ -216,6 +216,11 @@ video {
   color: var(--bg-warm);
 }
 
+.cursor.is-open .cursor__icon {
+  background: var(--grey);
+  color: var(--bg-warm);
+}
+
 .nav {
   position: fixed;
   inset: 2rem 0 auto 0;

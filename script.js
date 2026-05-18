@@ -1,5 +1,5 @@
 const canAnimate = true;
-const contactEmail = "hello@treasure.studio";
+const contactEmail = "hellotreasure.work@gmail.com";
 
 function initBannerVideo() {
   const video = document.querySelector(".click-scroll__video");
@@ -221,14 +221,14 @@ function initCursor() {
   });
 
   function setCursorMode(mode) {
-    cursor.classList.remove("is-play", "is-copy");
+    cursor.classList.remove("is-play", "is-copy", "is-open");
     cursor.classList.add("is-active", `is-${mode}`);
     cursorText.textContent = mode;
     if (cursorIcon) cursorIcon.textContent = mode === "play" ? "▶" : "↗";
   }
 
   function resetCursorMode() {
-    cursor.classList.remove("is-active", "is-play", "is-copy");
+    cursor.classList.remove("is-active", "is-play", "is-copy", "is-open");
     cursorText.textContent = "";
     if (cursorIcon) cursorIcon.textContent = "↗";
   }
@@ -244,7 +244,7 @@ function initCursor() {
 
   document.querySelectorAll(".cta__button").forEach((item) => {
     item.addEventListener("mouseenter", () => {
-      setCursorMode("copy");
+      setCursorMode("open");
     });
     item.addEventListener("mouseleave", () => {
       resetCursorMode();
