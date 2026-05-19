@@ -1436,7 +1436,7 @@ video {
 
 .booking__calendar-head {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 0.7rem;
@@ -1444,10 +1444,48 @@ video {
   font-weight: 900;
 }
 
-.booking__calendar-head small {
-  color: rgba(150, 144, 140, 0.78);
-  font-size: 0.78rem;
-  font-weight: 800;
+.booking__calendar-head > span {
+  text-align: center;
+}
+
+.booking__month {
+  position: relative;
+  width: 2.15rem;
+  height: 2.15rem;
+  flex: 0 0 2.15rem;
+  border: 1px solid rgba(150, 144, 140, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.38);
+  cursor: pointer;
+  transition: transform 0.24s var(--ease), background 0.24s ease, opacity 0.24s ease;
+}
+
+.booking__month::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 52%;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-left: 2px solid var(--grey);
+  border-bottom: 2px solid var(--grey);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.booking__month--next::before {
+  left: 48%;
+  transform: translate(-50%, -50%) rotate(225deg);
+}
+
+.booking__month:hover {
+  background: var(--orange);
+  transform: translateY(-1px);
+}
+
+.booking__month:disabled {
+  cursor: not-allowed;
+  opacity: 0.28;
+  transform: none;
 }
 
 .booking__weekdays,
@@ -1945,9 +1983,13 @@ video {
   }
 
   .booking__calendar-head {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.18rem;
+    gap: 0.55rem;
+  }
+
+  .booking__month {
+    width: 2rem;
+    height: 2rem;
+    flex-basis: 2rem;
   }
 
   .booking__weekdays,

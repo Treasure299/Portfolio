@@ -628,6 +628,7 @@ function initBooking() {
   let dateValues = [];
   let availableTimesByDate = {};
   let availabilityRequest = 0;
+  let calendarMonthDate = null;
   const calendarMonthFormatter = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" });
   const calendarDayFormatter = new Intl.DateTimeFormat("en-US", { day: "numeric" });
 
@@ -640,6 +641,10 @@ function initBooking() {
 
   function startOfDay(date) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  function startOfMonth(date) {
+    return new Date(date.getFullYear(), date.getMonth(), 1);
   }
 
   function isWeekend(date) {
@@ -671,7 +676,11 @@ function initBooking() {
     const firstBookableDay = new Date(today);
     firstBookableDay.setDate(today.getDate() + 1);
 
-    const calendarStart = new Date(today);
+    if (!calendarMonthDate) calendarMonthDate = startOfMonth(today);
+    const activeMonth = startOfMonth(calendarMonthDate);
+    const currentMonth = startOfMonth(today);
+    const canGoPrevious = activeMonth > currentMonth;
+    const calendarStart = new Date(activeMonth);
     const mondayOffset = (calendarStart.getDay() + 6) % 7;
     calendarStart.setDate(calendarStart.getDate() - mondayOffset);
 
@@ -693,14 +702,13 @@ function initBooking() {
     }
 
     dateValues = dates.map((date) => isoDate(date));
-    const monthStart = calendarMonthFormatter.format(visibleDays[0].date);
-    const monthEnd = calendarMonthFormatter.format(visibleDays[visibleDays.length - 1].date);
-    const monthLabel = monthStart === monthEnd ? monthStart : `${monthStart} - ${monthEnd}`;
+    const monthLabel = calendarMonthFormatter.format(activeMonth);
 
     datesWrap.innerHTML = `
       <div class="booking__calendar-head">
+        <button class="booking__month" type="button" data-calendar-nav="-1"${canGoPrevious ? "" : " disabled"} aria-label="Previous month"></button>
         <span>${monthLabel}</span>
-        <small>Weekends are closed</small>
+        <button class="booking__month booking__month--next" type="button" data-calendar-nav="1" aria-label="Next month"></button>
       </div>
       <div class="booking__weekdays" aria-hidden="true">
         <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
@@ -936,6 +944,7 @@ function initBooking() {
       event.stopPropagation();
     }
     availableTimesByDate = {};
+    calendarMonthDate = startOfMonth(new Date());
     buildDates();
     buildTimes();
     message.textContent = "";
@@ -1013,6 +1022,18 @@ function initBooking() {
     if (event.target === booking) closeBooking();
   });
   datesWrap.addEventListener("click", (event) => {
+    const nav = event.target.closest("[data-calendar-nav]");
+    if (nav && !nav.disabled) {
+      const direction = Number(nav.dataset.calendarNav);
+      calendarMonthDate = startOfMonth(calendarMonthDate || new Date());
+      calendarMonthDate.setMonth(calendarMonthDate.getMonth() + direction);
+      availableTimesByDate = {};
+      buildDates();
+      buildTimes();
+      loadAvailability();
+      return;
+    }
+
     const button = event.target.closest(".booking__date");
     if (!button || button.disabled) return;
     selectedDate = button.dataset.date || "";
