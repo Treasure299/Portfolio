@@ -625,49 +625,309 @@ function initBooking() {
 
   let selectedDate = "";
   let selectedTime = "";
-  const dateFormatter = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" });
+  let dateValues = [];
+  let availableTimesByDate = {};
+  let availabilityRequest = 0;
+  const calendarMonthFormatter = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" });
+  const calendarDayFormatter = new Intl.DateTimeFormat("en-US", { day: "numeric" });
 
   function isoDate(date) {
-    return date.toISOString().slice(0, 10);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }
 
-  function buildDates() {
-    const dates = [];
-    const cursor = new Date();
-    cursor.setDate(cursor.getDate() + 1);
-
-    while (dates.length < 9) {
-      const day = cursor.getDay();
-      if (day !== 0 && day !== 6) {
-        dates.push(new Date(cursor));
-      }
-      cursor.setDate(cursor.getDate() + 1);
-    }
-
-    datesWrap.innerHTML = dates.map((date, index) => {
-      const value = isoDate(date);
-      const [weekday, label] = dateFormatter.format(date).split(", ");
-      return `<button class="booking__date${index === 0 ? " is-selected" : ""}" type="button" data-date="${value}"><span>${weekday}</span><small>${label}</small></button>`;
-    }).join("");
-
-    selectedDate = isoDate(dates[0]);
+  function startOfDay(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
-  function buildTimes() {
+  function isWeekend(date) {
+    const day = date.getDay();
+    return day === 0 || day === 6;
+  }
+
+  function buildTimeValues() {
     const times = [];
     for (let hour = 10; hour <= 16; hour += 1) {
       times.push(`${String(hour).padStart(2, "0")}:00`);
       times.push(`${String(hour).padStart(2, "0")}:30`);
     }
+    return times;
+  }
 
+  function formatTime(time) {
+    const [hourText, minute] = time.split(":");
+    const hour = Number(hourText);
+    return `${hour > 12 ? hour - 12 : hour}:${minute}${hour >= 12 ? "pm" : "am"}`;
+  }
+
+  function selectedAvailability() {
+    return availableTimesByDate[selectedDate] || buildTimeValues();
+  }
+
+  function buildDates() {
+    const today = startOfDay(new Date());
+    const firstBookableDay = new Date(today);
+    firstBookableDay.setDate(today.getDate() + 1);
+
+    const calendarStart = new Date(today);
+    const mondayOffset = (calendarStart.getDay() + 6) % 7;
+    calendarStart.setDate(calendarStart.getDate() - mondayOffset);
+
+    const dates = [];
+    const visibleDays = [];
+    const cursor = new Date(calendarStart);
+
+    while (visibleDays.length < 42) {
+      const date = new Date(cursor);
+      const value = isoDate(date);
+      const disabled = date < firstBookableDay || isWeekend(date);
+      visibleDays.push({ date, value, disabled, weekend: isWeekend(date) });
+
+      if (!disabled) {
+        dates.push(date);
+      }
+
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    dateValues = dates.map((date) => isoDate(date));
+    const monthStart = calendarMonthFormatter.format(visibleDays[0].date);
+    const monthEnd = calendarMonthFormatter.format(visibleDays[visibleDays.length - 1].date);
+    const monthLabel = monthStart === monthEnd ? monthStart : `${monthStart} - ${monthEnd}`;
+
+    datesWrap.innerHTML = `
+      <div class="booking__calendar-head">
+        <span>${monthLabel}</span>
+        <small>Weekends are closed</small>
+      </div>
+      <div class="booking__weekdays" aria-hidden="true">
+        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+      </div>
+      <div class="booking__calendar-grid">
+        ${visibleDays.map((item) => {
+          const classes = [
+            "booking__date",
+            item.value === dateValues[0] ? "is-selected" : "",
+            item.disabled ? "is-disabled" : "",
+            item.weekend ? "is-weekend" : ""
+          ].filter(Boolean).join(" ");
+          const label = calendarDayFormatter.format(item.date);
+          const title = item.weekend ? "Weekend unavailable" : item.disabled ? "Unavailable" : `Choose ${item.value}`;
+          return `<button class="${classes}" type="button" data-date="${item.value}"${item.disabled ? " disabled" : ""} aria-label="${title}"><span>${label}</span></button>`;
+        }).join("")}
+      </div>
+    `;
+
+    selectedDate = isoDate(dates[0]);
+  }
+
+  function buildTimes(times = selectedAvailability()) {
     timesWrap.innerHTML = times.map((time, index) => {
-      const [hourText, minute] = time.split(":");
-      const hour = Number(hourText);
-      const label = `${hour > 12 ? hour - 12 : hour}:${minute}${hour >= 12 ? "pm" : "am"}`;
+      const label = formatTime(time);
       return `<button class="booking__time${index === 0 ? " is-selected" : ""}" type="button" data-time="${time}">${label}</button>`;
     }).join("");
 
+    if (!times.length) {
+      timesWrap.innerHTML = `<p class="booking__empty">No open times for this day.</p>`;
+      selectedTime = "";
+      return;
+    }
+
     selectedTime = times[0];
+  }
+
+  function syncDateAvailability() {
+    datesWrap.querySelectorAll(".booking__date").forEach((button) => {
+      const slots = availableTimesByDate[button.dataset.date || ""] || [];
+      const disabled = Boolean(Object.keys(availableTimesByDate).length) && slots.length === 0;
+      button.disabled = disabled;
+      button.classList.toggle("is-disabled", disabled);
+    });
+
+    const selectedSlots = availableTimesByDate[selectedDate];
+    if (selectedSlots && selectedSlots.length === 0) {
+      const firstOpenDate = dateValues.find((date) => (availableTimesByDate[date] || []).length);
+      if (firstOpenDate) {
+        selectedDate = firstOpenDate;
+        const button = datesWrap.querySelector(`[data-date="${firstOpenDate}"]`);
+        if (button) setSelected([...datesWrap.querySelectorAll(".booking__date")], button, "is-selected");
+      }
+    }
+  }
+
+  function requestJsonp(url) {
+    return new Promise((resolve, reject) => {
+      const callbackName = `treasureAvailability${Date.now()}${Math.round(Math.random() * 10000)}`;
+      const script = document.createElement("script");
+      const separator = url.includes("?") ? "&" : "?";
+      const timeout = window.setTimeout(() => {
+        cleanup();
+        reject(new Error("Availability request timed out."));
+      }, 10000);
+
+      function cleanup() {
+        window.clearTimeout(timeout);
+        delete window[callbackName];
+        script.remove();
+      }
+
+      window[callbackName] = (payload) => {
+        cleanup();
+        resolve(payload);
+      };
+
+      script.onerror = () => {
+        cleanup();
+        reject(new Error("Availability request failed."));
+      };
+      script.src = `${url}${separator}callback=${callbackName}`;
+      document.body.appendChild(script);
+    });
+  }
+
+  function chunkItems(items, size) {
+    const chunks = [];
+    for (let index = 0; index < items.length; index += size) {
+      chunks.push(items.slice(index, index + size));
+    }
+    return chunks;
+  }
+
+  function requestViaFrame(url) {
+    return new Promise((resolve, reject) => {
+      const frameName = `treasureAvailabilityFrame${Date.now()}`;
+      const iframe = document.createElement("iframe");
+      const separator = url.includes("?") ? "&" : "?";
+      const timeout = window.setTimeout(() => {
+        cleanup();
+        reject(new Error("Availability response timed out."));
+      }, 20000);
+
+      function cleanup() {
+        window.clearTimeout(timeout);
+        window.removeEventListener("message", handleMessage);
+        iframe.remove();
+      }
+
+      function handleMessage(event) {
+        if (event.data?.source !== "treasure-booking") return;
+        cleanup();
+        resolve(event.data.payload || {});
+      }
+
+      iframe.name = frameName;
+      iframe.hidden = true;
+      iframe.src = `${url}${separator}responseMode=message`;
+      window.addEventListener("message", handleMessage);
+      document.body.appendChild(iframe);
+    });
+  }
+
+  async function requestAvailability(url) {
+    if (window.fetch) {
+      try {
+        const response = await window.fetch(url, { method: "GET", cache: "no-store" });
+        if (!response.ok) throw new Error("Availability request failed.");
+        return await response.json();
+      } catch {
+        return requestViaFrame(url).catch(() => requestJsonp(url));
+      }
+    }
+
+    return requestViaFrame(url).catch(() => requestJsonp(url));
+  }
+
+  async function requestAvailabilityForDates(dates) {
+    const chunks = chunkItems(dates, 14);
+    const responses = await Promise.all(chunks.map((chunk) => {
+      const url = `${bookingEndpoint}?mode=availability&dates=${encodeURIComponent(chunk.join(","))}`;
+      return requestAvailability(url);
+    }));
+
+    return responses.reduce((merged, response) => {
+      if (!response?.ok) throw new Error(response?.error || "Could not check availability.");
+      return {
+        ok: true,
+        availability: { ...merged.availability, ...(response.availability || {}) },
+        timeZone: response.timeZone || merged.timeZone,
+        durationMinutes: response.durationMinutes || merged.durationMinutes
+      };
+    }, { ok: true, availability: {} });
+  }
+
+  function refreshTimes() {
+    syncDateAvailability();
+    buildTimes(selectedAvailability());
+  }
+
+  function loadAvailability() {
+    if (!bookingEndpoint || !dateValues.length) return;
+
+    const requestId = availabilityRequest + 1;
+    availabilityRequest = requestId;
+    message.textContent = "Checking available times...";
+
+    requestAvailabilityForDates(dateValues)
+      .then((payload) => {
+        if (requestId !== availabilityRequest) return;
+        if (!payload?.ok) throw new Error(payload?.error || "Could not check availability.");
+        availableTimesByDate = payload.availability || {};
+        refreshTimes();
+        message.textContent = "";
+      })
+      .catch(() => {
+        if (requestId !== availabilityRequest) return;
+        message.textContent = "Could not refresh live availability. Please try again.";
+        timesWrap.innerHTML = `<p class="booking__empty">Availability could not load.</p>`;
+        selectedTime = "";
+      });
+  }
+
+  function submitViaFrame(payload) {
+    return new Promise((resolve, reject) => {
+      const frameName = `treasureBookingFrame${Date.now()}`;
+      const iframe = document.createElement("iframe");
+      const postForm = document.createElement("form");
+      const timeout = window.setTimeout(() => {
+        cleanup();
+        reject(new Error("Booking response timed out."));
+      }, 20000);
+
+      function cleanup() {
+        window.clearTimeout(timeout);
+        window.removeEventListener("message", handleMessage);
+        postForm.remove();
+        iframe.remove();
+      }
+
+      function handleMessage(event) {
+        if (event.data?.source !== "treasure-booking") return;
+        cleanup();
+        resolve(event.data.payload || {});
+      }
+
+      iframe.name = frameName;
+      iframe.hidden = true;
+      postForm.hidden = true;
+      postForm.method = "POST";
+      postForm.action = bookingEndpoint;
+      postForm.target = frameName;
+
+      payload.set("responseMode", "message");
+      payload.forEach((value, key) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = value;
+        postForm.appendChild(input);
+      });
+
+      window.addEventListener("message", handleMessage);
+      document.body.append(iframe, postForm);
+      postForm.submit();
+    });
   }
 
   function openBooking(event) {
@@ -675,6 +935,7 @@ function initBooking() {
       event.preventDefault();
       event.stopPropagation();
     }
+    availableTimesByDate = {};
     buildDates();
     buildTimes();
     message.textContent = "";
@@ -684,6 +945,7 @@ function initBooking() {
     if (window.location.hash !== "#booking") {
       history.pushState(null, "", "#booking");
     }
+    loadAvailability();
   }
 
   function closeBooking() {
@@ -699,7 +961,7 @@ function initBooking() {
     buttons.forEach((button) => button.classList.toggle(className, button === target));
   }
 
-  function submitBooking(event) {
+  async function submitBooking(event) {
     event.preventDefault();
     const formData = new FormData(form);
     if (formData.get("website")) return;
@@ -725,15 +987,20 @@ function initBooking() {
     }
 
     message.textContent = "Booking your call...";
-    fetch(bookingEndpoint, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-      body: payload.toString()
-    });
+    try {
+      const result = await submitViaFrame(payload);
+      if (!result.ok) {
+        message.textContent = result.error || "That time is unavailable. Please choose another slot.";
+        loadAvailability();
+        return;
+      }
 
-    message.textContent = "Call request sent. Check your email for the invite and Google Meet link.";
-    form.reset();
+      message.textContent = "Call scheduled. Check your email for the invite and Google Meet link.";
+      form.reset();
+      loadAvailability();
+    } catch {
+      message.textContent = "I could not confirm the booking. Please try again.";
+    }
   }
 
   document.addEventListener("click", (event) => {
@@ -747,9 +1014,10 @@ function initBooking() {
   });
   datesWrap.addEventListener("click", (event) => {
     const button = event.target.closest(".booking__date");
-    if (!button) return;
+    if (!button || button.disabled) return;
     selectedDate = button.dataset.date || "";
     setSelected([...datesWrap.querySelectorAll(".booking__date")], button, "is-selected");
+    buildTimes(selectedAvailability());
   });
   timesWrap.addEventListener("click", (event) => {
     const button = event.target.closest(".booking__time");

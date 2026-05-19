@@ -1422,16 +1422,55 @@ video {
   height: 1px;
 }
 
-.booking__dates,
-.booking__times {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.55rem;
+.booking__dates {
+  display: block;
   margin-top: 0.7rem;
 }
 
 .booking__times {
+  display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.7rem;
+}
+
+.booking__calendar-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.7rem;
+  color: var(--grey);
+  font-weight: 900;
+}
+
+.booking__calendar-head small {
+  color: rgba(150, 144, 140, 0.78);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.booking__weekdays,
+.booking__calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.38rem;
+}
+
+.booking__weekdays {
+  margin-bottom: 0.42rem;
+  color: rgba(150, 144, 140, 0.72);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.booking__calendar-grid .booking__date {
+  min-height: 2.55rem;
+  aspect-ratio: 1;
+  border-radius: 0.72rem;
+  padding: 0;
+  text-align: center;
 }
 
 .booking__date,
@@ -1459,13 +1498,36 @@ video {
   opacity: 0.7;
 }
 
-.booking__date:hover,
+.booking__date:not(:disabled):hover,
 .booking__time:hover,
 .booking__date.is-selected,
 .booking__time.is-selected {
   border-color: rgba(150, 144, 140, 0.72);
   background: var(--orange);
   transform: translateY(-1px);
+}
+
+.booking__date.is-disabled,
+.booking__date:disabled {
+  cursor: not-allowed;
+  opacity: 0.34;
+  transform: none;
+}
+
+.booking__date.is-weekend {
+  background: rgba(150, 144, 140, 0.08);
+  opacity: 0.28;
+}
+
+.booking__empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  border: 1px solid rgba(150, 144, 140, 0.2);
+  border-radius: 0.9rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.28);
+  color: var(--grey);
+  font-weight: 800;
 }
 
 .booking__fields {
@@ -1877,10 +1939,25 @@ video {
     padding: 7vw 5vw 24vw;
   }
 
-  .booking__dates,
   .booking__times,
   .booking__fields {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .booking__calendar-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.18rem;
+  }
+
+  .booking__weekdays,
+  .booking__calendar-grid {
+    gap: 0.28rem;
+  }
+
+  .booking__calendar-grid .booking__date {
+    min-height: 2.35rem;
+    border-radius: 0.62rem;
   }
 
   .booking__fields label,
